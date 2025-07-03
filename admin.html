@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ניהול זמני תפילות - גבאים</title>
+  <style>
+    body { 
+      direction: rtl; 
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .admin-container { 
+      max-width: 800px; 
+      margin: 20px auto; 
+      background: #fff; 
+      border-radius: 14px; 
+      box-shadow: 0 8px 32px rgba(25, 118, 210, 0.15); 
+      padding: 32px 24px; 
+    }
+    .admin-title { 
+      text-align: center; 
+      color: #1976d2; 
+      font-size: 2rem; 
+      margin-bottom: 32px; 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* OCR Section */
+    .ocr-section {
+      background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+      border: 2px dashed #4caf50;
+    }
+    
+    .ocr-title {
+      color: #2e7d32;
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .file-upload-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .file-upload-btn {
+      background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    
+    .file-upload-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+    
+    .file-input {
+      display: none;
+    }
+    
+    .preview-container {
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .preview-image {
+      max-width: 100%;
+      max-height: 400px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .process-btn {
+      background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+    
+    .process-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+    }
+    
+    .process-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .ocr-results {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 20px;
+      border-left: 4px solid #2196f3;
+    }
+    
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #2196f3;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Rest of the existing styles */
+    .admin-label { 
+      font-weight: 600; 
+      margin-top: 18px; 
+      display: block; 
+      color: #0d47a1; 
+    }
+    
+    .admin-select, .admin-input { 
+      width: 100%; 
+      padding: 12px; 
+      margin-top: 6px; 
+      border-radius: 8px; 
+      border: 2px solid #e3f2fd; 
+      font-size: 1rem; 
+      transition: border-color 0.3s ease;
+    }
+    
+    .admin-select:focus, .admin-input:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+    
+    .prayer-list { 
+      margin: 18px 0 10px 0; 
+    }
+    
+    .prayer-row { 
+      display: flex; 
+      gap: 12px; 
+      align-items: center; 
+      margin-bottom: 12px; 
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .prayer-row:hover {
+      background: #e3f2fd;
+      transform: translateX(-2px);
+    }
+    
+    .prayer-row input { 
+      flex: 1;
+      padding: 8px 12px; 
+      border-radius: 6px; 
+      border: 1px solid #e0e0e0; 
+      transition: border-color 0.3s ease;
+    }
+    
+    .prayer-row input:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+    
+    .drag-handle {
+      cursor: grab;
+      color: #9e9e9e;
+      font-size: 1.2rem;
+      padding: 0 8px;
+      user-select: none;
+    }
+    
+    .prayer-row .remove-btn { 
+      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      color: #fff; 
+      border: none; 
+      border-radius: 6px; 
+      padding: 6px 12px; 
+      cursor: pointer; 
+      font-size: 0.9em; 
+      transition: all 0.3s ease;
+    }
+    
+    .prayer-row .remove-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .add-btn { 
+      background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+      color: #fff; 
+      border: none; 
+      border-radius: 8px; 
+      padding: 10px 20px; 
+      font-size: 1em; 
+      margin-top: 12px; 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+    }
+    
+    .add-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+    
+    .save-btn { 
+      background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+      color: #fff; 
+      border: none; 
+      border-radius: 8px; 
+      padding: 16px 32px; 
+      font-size: 1.2em; 
+      margin-top: 32px; 
+      cursor: pointer; 
+      display: block; 
+      width: 100%; 
+      transition: all 0.3s ease;
+    }
+    
+    .save-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+    
+    .section-title { 
+      color: #1565c0; 
+      font-size: 1.3em; 
+      margin: 24px 0 16px 0; 
+      font-weight: 700; 
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e3f2fd;
+    }
+    
+    .status-msg { 
+      text-align: center; 
+      margin-top: 18px; 
+      font-size: 1.1em; 
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    .success { 
+      background: #e8f5e8; 
+      color: #2e7d32; 
+      border: 1px solid #c8e6c9;
+    }
+    
+    .error { 
+      background: #ffebee; 
+      color: #c62828; 
+      border: 1px solid #ffcdd2;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-title">ניהול זמני תפילות</div>
+    
+    <!-- OCR Section -->
+    <div class="ocr-section">
+      <div class="ocr-title">📷 עדכון אוטומטי מתמונה</div>
+      <div class="file-upload-container">
+        <input type="file" id="image-upload" class="file-input" accept="image/*">
+        <button class="file-upload-btn" onclick="document.getElementById('image-upload').click()">
+          בחר תמונה להעלאה
+        </button>
+      </div>
+      
+      <div class="preview-container" id="preview-container" style="display: none;">
+        <img id="preview-image" class="preview-image">
+        <div style="margin-top: 15px;">
+          <button id="process-btn" class="process-btn">עבד תמונה וזהה זמנים</button>
+        </div>
+      </div>
+      
+      <div class="loading-spinner" id="loading-spinner">
+        <div class="spinner"></div>
+        <p>מעבד תמונה...</p>
+      </div>
+      
+      <div id="ocr-results" class="ocr-results" style="display: none;">
+        <strong>זמנים שזוהו:</strong>
+        <div id="detected-times"></div>
+        <div style="margin-top: 15px;">
+          <button id="apply-times-btn" class="process-btn">החל זמנים</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Existing Form -->
+    <label class="admin-label" for="shul-select">בחר בית כנסת:</label>
+    <select id="shul-select" class="admin-select">
+      <option value="main">בית הכנסת הראשי</option>
+      <option value="youth">מנין בני נוער</option>
+      <option value="early">מנין מוקדם</option>
+    </select>
+
+    <div class="section-title">זמני יום חול</div>
+    <div id="weekday-list" class="prayer-list"></div>
+    <button id="add-weekday" class="add-btn">הוסף תפילה ליום חול</button>
+
+    <div class="section-title">זמני שבת</div>
+    <div id="shabbat-list" class="prayer-list"></div>
+    <button id="add-shabbat" class="add-btn">הוסף תפילה לשבת</button>
+
+    <button id="save-btn" class="save-btn">שמור שינויים</button>
+    <div id="status-msg" class="status-msg"></div>
+  </div>
+
+  <footer class="footer">נבנה ע"י מיכאל אפריאט ©</footer>
+  
+  <script>
+    // Global variables
+    let weekdayPrayers = [];
+    let shabbatPrayers = [];
+    let detectedTimes = {};
+    
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSampleData();
+      setupEventListeners();
+    });
+    
+    function setupEventListeners() {
+      // Image upload
+      document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+      document.getElementById('process-btn').addEventListener('click', processImage);
+      document.getElementById('apply-times-btn').addEventListener('click', applyDetectedTimes);
+      
+      // Existing buttons
+      document.getElementById('add-weekday').addEventListener('click', () => addPrayer('weekday'));
+      document.getElementById('add-shabbat').addEventListener('click', () => addPrayer('shabbat'));
+      document.getElementById('save-btn').addEventListener('click', saveChanges);
+    }
+    
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const previewContainer = document.getElementById('preview-container');
+          const previewImage = document.getElementById('preview-image');
+          
+          previewImage.src = e.target.result;
+          previewContainer.style.display = 'block';
+          
+          // Hide previous results
+          document.getElementById('ocr-results').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    
+    function processImage() {
+      const loadingSpinner = document.getElementById('loading-spinner');
+      const processBtn = document.getElementById('process-btn');
+      
+      loadingSpinner.style.display = 'block';
+      processBtn.disabled = true;
+      
+      // Simulate OCR processing (in real implementation, you'd use Tesseract.js or similar)
+      setTimeout(() => {
+        // Mock detected times based on the image you showed
+        detectedTimes = {
+          weekday: [
+            { name: 'תפילת שחרית', time: '07:45' },
+            { name: 'קידוש ושיעור צורבא דרבנן מפי אברהם', time: '' },
+            { name: 'תחילים לילדים', time: '' },
+            { name: 'מנחה גדולה', time: '13:15' },
+            { name: 'חוג כלימוד הפטרה / שירה ופיוט', time: '16:30' },
+            { name: 'לימוד אבות ובנים', time: '17:00' },
+            { name: 'תפילת מנחה', time: '18:00' }
+          ],
+          shabbat: [
+            { name: 'תפילת ערבית "הנכים"', time: '20:25' },
+            { name: 'שיעור בזוהר הקדוש', time: '21:30' }
+          ]
+        };
+        
+        displayDetectedTimes();
+        loadingSpinner.style.display = 'none';
+        processBtn.disabled = false;
+      }, 2000);
+    }
+    
+    function displayDetectedTimes() {
+      const resultsDiv = document.getElementById('ocr-results');
+      const detectedTimesDiv = document.getElementById('detected-times');
+      
+      let html = '';
+      
+      if (detectedTimes.weekday && detectedTimes.weekday.length > 0) {
+        html += '<h4>זמני יום חול:</h4><ul>';
+        detectedTimes.weekday.forEach(prayer => {
+          html += `<li>${prayer.name}${prayer.time ? ` - ${prayer.time}` : ''}</li>`;
+        });
+        html += '</ul>';
+      }
+      
+      if (detectedTimes.shabbat && detectedTimes.shabbat.length > 0) {
+        html += '<h4>זמני שבת:</h4><ul>';
+        detectedTimes.shabbat.forEach(prayer => {
+          html += `<li>${prayer.name}${prayer.time ? ` - ${prayer.time}` : ''}</li>`;
+        });
+        html += '</ul>';
+      }
+      
+      detectedTimesDiv.innerHTML = html;
+      resultsDiv.style.display = 'block';
+    }
+    
+    function applyDetectedTimes() {
+      if (detectedTimes.weekday) {
+        weekdayPrayers = [...detectedTimes.weekday];
+        renderPrayerList('weekday');
+      }
+      
+      if (detectedTimes.shabbat) {
+        shabbatPrayers = [...detectedTimes.shabbat];
+        renderPrayerList('shabbat');
+      }
+      
+      showStatus('זמנים הוחלו בהצלחה!', 'success');
+    }
+    
+    function loadSampleData() {
+      // Load sample data
+      weekdayPrayers = [
+        { name: 'שחרית', time: '07:00' },
+        { name: 'מנחה', time: '18:30' },
+        { name: 'ערבית', time: '20:00' }
+      ];
+      
+      shabbatPrayers = [
+        { name: 'קבלת שבת', time: '19:31' },
+        { name: 'שחרית', time: '09:00' },
+        { name: 'מנחה', time: '19:20' },
+        { name: 'מוצאי שבת', time: '20:33' }
+      ];
+      
+      renderPrayerList('weekday');
+      renderPrayerList('shabbat');
+    }
+    
+    function renderPrayerList(type) {
+      const prayers = type === 'weekday' ? weekdayPrayers : shabbatPrayers;
+      const container = document.getElementById(type + '-list');
+      
+      container.innerHTML = prayers.map((prayer, index) => `
+        <div class="prayer-row" data-index="${index}">
+          <span class="drag-handle">⋮⋮</span>
+          <input type="text" placeholder="שם התפילה" value="${prayer.name}" 
+                 onchange="updatePrayer('${type}', ${index}, 'name', this.value)">
+          <input type="time" placeholder="שעה" value="${prayer.time}" 
+                 onchange="updatePrayer('${type}', ${index}, 'time', this.value)">
+          <button class="remove-btn" onclick="removePrayer('${type}', ${index})">הסר</button>
+        </div>
+      `).join('');
+    }
+    
+    function addPrayer(type) {
+      const prayers = type === 'weekday' ? weekdayPrayers : shabbatPrayers;
+      prayers.push({ name: '', time: '' });
+      renderPrayerList(type);
+    }
+    
+    function removePrayer(type, index) {
+      const prayers = type === 'weekday' ? weekdayPrayers : shabbatPrayers;
+      prayers.splice(index, 1);
+      renderPrayerList(type);
+    }
+    
+    function updatePrayer(type, index, field, value) {
+      const prayers = type === 'weekday' ? weekdayPrayers : shabbatPrayers;
+      prayers[index][field] = value;
+    }
+    
+    function saveChanges() {
+      const selectedShul = document.getElementById('shul-select').value;
+      
+      const data = {
+        shul: selectedShul,
+        weekday: weekdayPrayers,
+        shabbat: shabbatPrayers,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Here you would send the data to your server
+      console.log('Saving data:', data);
+      
+      // Simulate save operation
+      setTimeout(() => {
+        showStatus('השינויים נשמרו בהצלחה!', 'success');
+      }, 1000);
+    }
+    
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('status-msg');
+      statusDiv.textContent = message;
+      statusDiv.className = `status-msg ${type}`;
+      
+      setTimeout(() => {
+        statusDiv.textContent = '';
+        statusDiv.className = 'status-msg';
+      }, 3000);
+    }
+  </script>
+</body>
+  </html>
